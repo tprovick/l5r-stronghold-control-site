@@ -1,0 +1,9 @@
+{
+  "name": "l5r-stronghold-control-site",
+  "version": "0.1.0",
+  "dependencies": {
+    "promise-polyfill": "^7.1.2",
+    "whatwg-fetch": "^2.0.4"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>L5R - Stronghold Control Contest @ 401 Games</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="L5R - Stronghold Control Contest @ 401 Games" />
+  <meta property="og:description" content="Over the course of April, May and June, 401 Games will be tabulating Stronghold Control results from all Legend of the Five Rings event to determine which clan will claim 401 Games as their Stronghold."
+  />
+  <meta property="og:image:alt" content="L5R - Stronghold Control Contest @ 401 Games" />
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@7/dist/polyfill.min.js"></script>
+  <script src="./node_modules/whatwg-fetch/fetch.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .level1 {
+      background-image: url(img/wallpaper-shoju.jpg);
+    }
+
+    .level2 {
+      background-image: url(img/logo_l5r.png), linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 30%);
+      background-size: 500px, 100%;
+    }
+
+    .clan-image {
+      margin: 10px;
+      margin-left: 5px;
+    }
+
+    .clan-results {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .ticks {
+      width: 34px;
+      height: 30px;
+      margin: 5px 0px;
+    }
+
+    .ticks[data-value="5"] {
+      background: url(./img/ticks5.png);
+    }
+
+    .ticks[data-value="4"] {
+      background: url(./img/ticks4.png);
+    }
+
+    .ticks[data-value="3"] {
+      background: url(./img/ticks3.png);
+    }
+
+    .ticks[data-value="2"] {
+      background: url(./img/ticks2.png);
+    }
+
+    .ticks[data-value="1"] {
+      background: url(./img/ticks1.png);
+    }
+
+    .tick-list {
+      display: flex;
+      align-items: center;
+    }
+
+    .tick-list div:first-child {
+      width: 50px;
+      text-align: right;
+    }
+
+    .diff {
+      width: 40px;
+      text-align: center;
+      font-size: 30px;
+      color: #B71C1C;
+    }
+
+    .diff[data-pos="true"]:before {
+      content: "+";
+    }
+
+    .diff[data-pos="true"] {
+      color: #388E3C;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="splash level1">
+    <div class="splash level2">
+      <div class="container">
+        <section class="col-md-12">
+          <img src="./img/401-games-logo-good.png" width="255" height="180" style="float:right;margin:0px 20px" />
+          <h2>
+            Stronghold Control Contest
+          </h2>
+          <div>
+            Over the course of April, May and June, 401 Games will be tabulating Stronghold Control results from all Legend of the Five
+            Rings event to determine which clan will claim 401 Games as their Stronghold. Players will be able to demonstrate
+            their clan loyalty when participating in any of the Stronghold tournaments or the Disciples of the Void Release
+            Event. Every win and loss for each clan will be recorded and the clan with the greatest difference between wins
+            and losses will assume control of the store as their Stronghold until the 2019 Battle for the Stronghold event.
+          </div>
+          <div id="app">
+            <div>
+              <h3>Events</h3>
+              <ul>
+                <li v-for="event in events">
+                  <a :href="event.eventUrl">{{ event.name }}</a> - {{ event.date }}
+                  <span v-if="event.lotusPavilionId>0">(
+                    <a :href="lotusPavilionUrl + event.lotusPavilionId">Results</a>)</span>
+                </li>
+              </ul>
+            </div>
+            <div v-if="seen">
+              <h3>Results</h3>
+              <div v-for="clan in clans" class="clan-results">
+                <div class="diff" :data-pos="clan.wins - clan.losses > 0">{{ clan.wins - clan.losses }}</div>
+                <div>
+                  <img :src="'./img/mon-' + clan.name + '.png'" width="84" height="80" class="clan-image" />
+                </div>
+                <div>
+                  <div class="tick-list">
+                    <div>Wins</div>
+                    <div v-for="i in Math.floor(clan.wins / 5)" class="ticks" data-value="5"></div>
+                    <div v-if="clan.wins % 5 > 0" class="ticks" :data-value="clan.wins % 5"></div>
+                  </div>
+                  <div class="tick-list">
+                    <div>Losses</div>
+                    <div v-for="i in Math.floor(clan.losses / 5)" class="ticks" data-value="5"></div>
+                    <div v-if="clan.losses % 5 > 0" class="ticks" :data-value="clan.losses % 5"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script>
+    var resultsList = [
+      {
+        name: 'crab',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'crane',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'dragon',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'lion',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'phoenix',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'scorpion',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+      {
+        name: 'unicorn',
+        wins: 0,
+        losses: 0,
+        img: '',
+      },
+    ];
+
+    var events = [
+      {
+        name: 'Disciples of the Void Release Event',
+        date: 'April 8, 2018',
+        lotusPavilionId: 994,
+        eventUrl: 'https://www.facebook.com/events/254804871729158/',
+      },
+      {
+        name: 'Stronghold Conflict Tournament 1',
+        date: 'April 29, 2018',
+        lotusPavilionId: 0,
+        eventUrl: 'http://www.401games.ca/events',
+      },
+      {
+        name: 'Stronghold Conflict Tournament 2',
+        date: 'May 13, 2018',
+        lotusPavilionId: 0,
+        eventUrl: 'http://www.401games.ca/events',
+      },
+      {
+        name: 'Stronghold Conflict Tournament 3',
+        date: 'June 3, 2018',
+        lotusPavilionId: 0,
+        eventUrl: 'http://www.401games.ca/events',
+      },
+      {
+        name: 'Stronghold Showdown',
+        date: 'June 24, 2018',
+        lotusPavilionId: 0,
+        eventUrl: 'http://www.401games.ca/events',
+      },
+    ];
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        message: 'Hello Vue!',
+        clans: resultsList,
+        lotusPavilionUrl: "https://thelotuspavilion.com/tournaments/",
+        events: events,
+        seen: false,
+      },
+      mounted: function () {
+        var clanIdx = {
+          'crab': 0,
+          'crane': 1,
+          'dragon': 2,
+          'lion': 3,
+          'phoenix': 4,
+          'scorpion': 5,
+          'unicorn': 6,
+        };
+        var lotusPavilionApiUrl = 'https://thelotuspavilion.com/api/v3/games?tournament_id=';
+
+        var eventsToProcess = this.events.length;
+        for (var j = 0; j < this.events.length; j++) {
+          if (this.events[j].lotusPavilionId > 0) {
+            fetch(lotusPavilionApiUrl + this.events[j].lotusPavilionId)
+              .then(function (response) {
+                return response.json();
+              }.bind(this)).then(function (json) {
+                for (var i = 0; i < json.length; i++) {
+                  game = json[i];
+
+                  var winningClan = game.p1_clan;
+                  var losingClan = game.p2_clan;
+                  if (game.p2_points > 5) {
+                    winningClan = game.p2_clan;
+                    losingClan = game.p1_clan;
+                  }
+                  this.clans[clanIdx[winningClan.toLowerCase()]].wins += 1;
+                  if (losingClan) {
+                    this.clans[clanIdx[losingClan.toLowerCase()]].losses += 1;
+                  }
+                }
+                this.clans.sort(function (a, b) {
+                  return (a.wins - a.losses) < (b.wins - b.losses);
+                });
+                eventsToProcess -= 1;
+                this.seen = (eventsToProcess === 0);
+              }.bind(this)).catch(function (ex) {
+                console.error('Parsing failed: ', ex);
+              });
+          } else {
+            eventsToProcess -= 1;
+            this.seen = (eventsToProcess === 0);
+          }
+        }
+      },
+    });
+  </script>
+</body>
+
+</html>
